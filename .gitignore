@@ -68,6 +68,9 @@ deepseek-harnessengineering-java-example.md
 # CLAUDE.md (project instructions)
 CLAUDE.md
 
+# Plan docs checked into repo
+implementationplan.md
+
 # Python (for scripts)
 __pycache__/
 *.py[cod]
