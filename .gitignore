@@ -1,0 +1,95 @@
+# Maven
+target/
+*.class
+*.jar
+*.war
+*.zip
+*.tar.gz
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+dependency-reduced-pom.xml
+buildNumber.properties
+.mvn/timing.properties
+.mvn/wrapper/maven-wrapper.jar
+
+# IDE
+.idea/
+*.iml
+*.iws
+*.ipr
+.vscode/
+.settings/
+.project
+.classpath
+*.launch
+.factorypath
+.springBeans
+
+# Eclipse
+bin/
+*.swp
+*~
+
+# NetBeans
+nbproject/
+nbactions.xml
+nb-configuration.xml
+
+# OS
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# Logs
+*.log
+logs/
+
+# Java
+*.class
+hs_err_pid*
+replay_pid*
+
+# Environment
+.env
+.env.local
+*.local
+
+# Claude code config (personal settings)
+.claude/
+
+# Deepseek example (reference doc, not source)
+deepseek-harnessengineering-java-example.md
+
+# CLAUDE.md (project instructions)
+CLAUDE.md
+
+# Python (for scripts)
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+venv/
+.venv/
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Maven wrapper
+!/.mvn/wrapper/maven-wrapper.jar
+
+# Temp / output files
+mvn_output.txt
+nul
+
+# Application config overrides
+application-local.yml
+application-dev.yml
+application-*.local.yml
