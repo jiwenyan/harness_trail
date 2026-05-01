@@ -301,4 +301,11 @@ public class OrderServiceImpl implements OrderService {
             throw new IllegalArgumentException("配送地址不能为空");
         }
     }
+
+    @Override
+    public Page<OrderEntity> getOrdersByFilters(Long userId, OrderStatus status, PaymentStatus paymentStatus,
+                                                LocalDateTime startDate, LocalDateTime endDate,
+                                                String keyword, Pageable pageable) {
+        return orderDAO.findByFilters(userId, status, paymentStatus, startDate, endDate, keyword, pageable);
+    }
 }

@@ -4,6 +4,7 @@ import com.example.data.entity.FoodItemEntity;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 
@@ -76,4 +77,11 @@ public interface FoodItemDAO {
      * 获取所有分类
      */
     List<String> findAllCategories();
+
+    /**
+     * 根据组合条件查询菜品（分页）
+     */
+    Page<FoodItemEntity> findByFilters(String category, Boolean isAvailable,
+                                       BigDecimal minPrice, BigDecimal maxPrice,
+                                       String keyword, Pageable pageable);
 }

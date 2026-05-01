@@ -4,6 +4,7 @@ import com.example.data.entity.FoodItemEntity;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 
@@ -96,4 +97,11 @@ public interface FoodItemService {
      * 增加菜品库存
      */
     boolean increaseStock(Long foodItemId, Integer quantity);
+
+    /**
+     * 根据组合条件查询菜品（分页）
+     */
+    Page<FoodItemEntity> getFoodItemsByFilters(String category, Boolean isAvailable,
+                                               BigDecimal minPrice, BigDecimal maxPrice,
+                                               String keyword, Pageable pageable);
 }

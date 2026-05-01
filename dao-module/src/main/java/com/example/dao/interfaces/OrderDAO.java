@@ -104,4 +104,11 @@ public interface OrderDAO {
      * 检查订单是否存在
      */
     boolean existsById(Long id);
+
+    /**
+     * 根据组合条件查询订单（分页）
+     */
+    Page<OrderEntity> findByFilters(Long userId, OrderStatus status, PaymentStatus paymentStatus,
+                                    LocalDateTime startDate, LocalDateTime endDate,
+                                    String keyword, Pageable pageable);
 }

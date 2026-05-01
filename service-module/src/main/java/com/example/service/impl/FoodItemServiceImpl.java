@@ -8,6 +8,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 
@@ -180,4 +181,10 @@ public class FoodItemServiceImpl implements FoodItemService {
         return foodItemDAO.save(foodItem);
     }
 
+    @Override
+    public Page<FoodItemEntity> getFoodItemsByFilters(String category, Boolean isAvailable,
+                                                      BigDecimal minPrice, BigDecimal maxPrice,
+                                                      String keyword, Pageable pageable) {
+        return foodItemDAO.findByFilters(category, isAvailable, minPrice, maxPrice, keyword, pageable);
+    }
 }

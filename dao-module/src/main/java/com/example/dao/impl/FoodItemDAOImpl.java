@@ -14,6 +14,7 @@ import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Repository;
 import org.bson.Document;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -120,6 +121,38 @@ public class FoodItemDAOImpl implements FoodItemDAO {
     @Override
     public List<String> findAllCategories() {
         return mongoTemplate.findDistinct(new Query(), "category", COLLECTION_NAME, String.class);
+    }
+
+    @Override
+    public Page<FoodItemEntity> findByFilters(String category, Boolean isAvailable,
+                                              BigDecimal minPrice, BigDecimal maxPrice,
+                                              String keyword, Pageable pageable) {
+        Criteria criteria = new Criteria();
+
+        if (category != null && !category.trim().isEmpty()) {
+            criteria = criteria.and("category").is(category);
+        }
+        if (isAvailable != null) {
+            criteria = criteria.and("is_available").is(isAvailable);
+        }
+        if (minPrice != null && maxPrice != null) {
+            criteria = criteria.and("price").gte(minPrice).lte(maxPrice);
+        } else if (minPrice != null) {
+            criteria = criteria.and("price").gte(minPrice);
+        } else if (maxPrice != null) {
+            criteria = criteria.and("price").lte(maxPrice);
+        }
+        if (keyword != null && !keyword.trim().isEmpty()) {
+            criteria = criteria.orOperator(
+                    Criteria.where("name").regex(keyword, "i"),
+                    Criteria.where("description").regex(keyword, "i")
+            );
+        }
+
+        Query query = new Query(criteria).with(pageable);
+        List<FoodItemEntity> list = mongoTemplate.find(query, FoodItemEntity.class, COLLECTION_NAME);
+        long total = mongoTemplate.count(new Query(criteria), FoodItemEntity.class, COLLECTION_NAME);
+        return new PageImpl<>(list, pageable, total);
     }
 
     private Long generateSequenceId(String collectionName) {

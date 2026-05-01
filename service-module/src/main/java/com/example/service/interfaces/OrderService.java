@@ -125,4 +125,11 @@ public interface OrderService {
      * 计算订单总金额（旧方法，兼容性）
      */
     double calculateOrderTotal(Long orderId);
+
+    /**
+     * 根据组合条件查询订单（分页）
+     */
+    Page<OrderEntity> getOrdersByFilters(Long userId, OrderStatus status, PaymentStatus paymentStatus,
+                                         LocalDateTime startDate, LocalDateTime endDate,
+                                         String keyword, Pageable pageable);
 }

@@ -8,6 +8,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.List;
 import java.util.Optional;
 
@@ -60,6 +62,9 @@ public class UserServiceImpl implements UserService {
             throw new IllegalArgumentException("手机号已存在");
         }
 
+        // 密码加密存储
+        user.setPassword(hashPassword(user.getPassword()));
+
         return userDAO.save(user);
     }
 
@@ -74,7 +79,7 @@ public class UserServiceImpl implements UserService {
         existingUser.setDefaultAddress(user.getDefaultAddress());
 
         // 如果邮箱有变化，检查新邮箱是否可用
-        if (!existingUser.getEmail().equals(user.getEmail())) {
+        if (user.getEmail() != null && !existingUser.getEmail().equals(user.getEmail())) {
             if (userDAO.existsByEmail(user.getEmail())) {
                 throw new IllegalArgumentException("邮箱已存在");
             }
@@ -82,7 +87,7 @@ public class UserServiceImpl implements UserService {
         }
 
         // 如果手机号有变化，检查新手机号是否可用
-        if (!existingUser.getPhone().equals(user.getPhone())) {
+        if (user.getPhone() != null && !existingUser.getPhone().equals(user.getPhone())) {
             if (userDAO.existsByPhone(user.getPhone())) {
                 throw new IllegalArgumentException("手机号已存在");
             }
@@ -115,7 +120,7 @@ public class UserServiceImpl implements UserService {
     @Override
     public boolean validateCredentials(String username, String password) {
         Optional<UserEntity> user = userDAO.findByUsername(username);
-        return user.isPresent() && user.get().getPassword().equals(password);
+        return user.isPresent() && user.get().getPassword().equals(hashPassword(password));
     }
 
     @Override
@@ -131,6 +136,25 @@ public class UserServiceImpl implements UserService {
     @Override
     public boolean isPhoneAvailable(String phone) {
         return !userDAO.existsByPhone(phone);
+    }
+
+    /**
+     * 对密码进行SHA-256哈希加密
+     */
+    private String hashPassword(String password) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hash = digest.digest(password.getBytes());
+            StringBuilder hexString = new StringBuilder();
+            for (byte b : hash) {
+                String hex = Integer.toHexString(0xff & b);
+                if (hex.length() == 1) hexString.append('0');
+                hexString.append(hex);
+            }
+            return hexString.toString();
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException("密码加密失败", e);
+        }
     }
 
     /**

@@ -162,6 +162,38 @@ public class OrderDAOImpl implements OrderDAO {
         return mongoTemplate.exists(query, OrderEntity.class, COLLECTION_NAME);
     }
 
+    @Override
+    public Page<OrderEntity> findByFilters(Long userId, OrderStatus status, PaymentStatus paymentStatus,
+                                           LocalDateTime startDate, LocalDateTime endDate,
+                                           String keyword, Pageable pageable) {
+        Criteria criteria = new Criteria();
+
+        if (userId != null) {
+            criteria = criteria.and("user_id").is(userId);
+        }
+        if (status != null) {
+            criteria = criteria.and("status").is(status);
+        }
+        if (paymentStatus != null) {
+            criteria = criteria.and("payment_status").is(paymentStatus);
+        }
+        if (startDate != null && endDate != null) {
+            criteria = criteria.and("created_at").gte(startDate).lte(endDate);
+        } else if (startDate != null) {
+            criteria = criteria.and("created_at").gte(startDate);
+        } else if (endDate != null) {
+            criteria = criteria.and("created_at").lte(endDate);
+        }
+        if (keyword != null && !keyword.trim().isEmpty()) {
+            criteria = criteria.and("order_number").regex(keyword, "i");
+        }
+
+        Query query = new Query(criteria).with(pageable);
+        List<OrderEntity> list = mongoTemplate.find(query, OrderEntity.class, COLLECTION_NAME);
+        long total = mongoTemplate.count(new Query(criteria), OrderEntity.class, COLLECTION_NAME);
+        return new PageImpl<>(list, pageable, total);
+    }
+
     /**
      * 生成序列ID
      */

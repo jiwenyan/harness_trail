@@ -317,13 +317,12 @@ public class OrderResource {
     private OrderItemEntity convertItemToEntity(OrderItemDTO dto, OrderEntity order) {
         OrderItemEntity entity = new OrderItemEntity();
         entity.setId(dto.getId());
-        entity.setOrderId(dto.getOrderId());
+        entity.setOrderId(order.getId());
         entity.setFoodItemId(dto.getFoodItemId());
         entity.setQuantity(dto.getQuantity());
         entity.setUnitPrice(dto.getUnitPrice());
         entity.setTotalPrice(dto.getTotalPrice());
         entity.setSpecialInstructions(dto.getSpecialInstructions());
-        entity.setOrderId(order.getId());
         return entity;
     }
 }

@@ -1,7 +1,10 @@
 package com.example.api.resources;
 
+import com.example.api.dto.UserAddressDTO;
 import com.example.api.dto.UserDTO;
+import com.example.data.entity.UserAddressEntity;
 import com.example.data.entity.UserEntity;
+import com.example.service.interfaces.UserAddressService;
 import com.example.service.interfaces.UserService;
 import jakarta.validation.Valid;
 import jakarta.ws.rs.*;
@@ -27,10 +30,12 @@ import java.util.stream.Collectors;
 public class UserResource {
 
     private final UserService userService;
+    private final UserAddressService userAddressService;
 
     @Autowired
-    public UserResource(UserService userService) {
+    public UserResource(UserService userService, UserAddressService userAddressService) {
         this.userService = userService;
+        this.userAddressService = userAddressService;
     }
 
     /**
@@ -209,6 +214,113 @@ public class UserResource {
         return Response.ok(isAvailable).build();
     }
 
+    // ========== 地址管理 ==========
+
+    /**
+     * 获取用户的所有地址
+     */
+    @GET
+    @Path("/{userId}/addresses")
+    public Response getUserAddresses(@PathParam("userId") Long userId) {
+        List<UserAddressEntity> addresses = userAddressService.getAddressesByUserId(userId);
+        List<UserAddressDTO> dtos = addresses.stream()
+                .map(this::convertAddressToDTO)
+                .collect(Collectors.toList());
+        return Response.ok(dtos).build();
+    }
+
+    /**
+     * 获取用户默认地址
+     */
+    @GET
+    @Path("/{userId}/addresses/default")
+    public Response getUserDefaultAddress(@PathParam("userId") Long userId) {
+        Optional<UserAddressEntity> address = userAddressService.getDefaultAddress(userId);
+        if (address.isPresent()) {
+            return Response.ok(convertAddressToDTO(address.get())).build();
+        }
+        return Response.status(Response.Status.NOT_FOUND)
+                .entity("默认地址不存在")
+                .build();
+    }
+
+    /**
+     * 创建地址
+     */
+    @POST
+    @Path("/{userId}/addresses")
+    public Response createAddress(@PathParam("userId") Long userId, @Valid UserAddressDTO dto) {
+        try {
+            dto.setUserId(userId);
+            UserAddressEntity entity = convertAddressToEntity(dto);
+            UserAddressEntity created = userAddressService.createAddress(entity);
+            return Response.status(Response.Status.CREATED)
+                    .entity(convertAddressToDTO(created))
+                    .build();
+        } catch (IllegalArgumentException e) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity(e.getMessage())
+                    .build();
+        }
+    }
+
+    /**
+     * 更新地址
+     */
+    @PUT
+    @Path("/{userId}/addresses/{addressId}")
+    public Response updateAddress(
+            @PathParam("userId") Long userId,
+            @PathParam("addressId") Long addressId,
+            @Valid UserAddressDTO dto) {
+        try {
+            dto.setUserId(userId);
+            UserAddressEntity entity = convertAddressToEntity(dto);
+            UserAddressEntity updated = userAddressService.updateAddress(addressId, entity);
+            return Response.ok(convertAddressToDTO(updated)).build();
+        } catch (IllegalArgumentException e) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity(e.getMessage())
+                    .build();
+        }
+    }
+
+    /**
+     * 删除地址
+     */
+    @DELETE
+    @Path("/{userId}/addresses/{addressId}")
+    public Response deleteAddress(
+            @PathParam("userId") Long userId,
+            @PathParam("addressId") Long addressId) {
+        try {
+            userAddressService.deleteAddress(addressId);
+            return Response.noContent().build();
+        } catch (IllegalArgumentException e) {
+            return Response.status(Response.Status.NOT_FOUND)
+                    .entity(e.getMessage())
+                    .build();
+        }
+    }
+
+    /**
+     * 设置默认地址
+     */
+    @PUT
+    @Path("/{userId}/addresses/{addressId}/default")
+    public Response setDefaultAddress(
+            @PathParam("userId") Long userId,
+            @PathParam("addressId") Long addressId) {
+        try {
+            UserAddressEntity updated = userAddressService.setDefaultAddress(userId, addressId);
+            return Response.ok(convertAddressToDTO(updated)).build();
+        } catch (IllegalArgumentException e) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity(e.getMessage())
+                    .build();
+        }
+    }
+
     /**
      * 将UserEntity转换为UserDTO
      */
@@ -229,6 +341,42 @@ public class UserResource {
     /**
      * 将UserDTO转换为UserEntity
      */
+    /**
+     * 将UserAddressEntity转换为UserAddressDTO
+     */
+    private UserAddressDTO convertAddressToDTO(UserAddressEntity entity) {
+        UserAddressDTO dto = new UserAddressDTO();
+        dto.setId(entity.getId());
+        dto.setUserId(entity.getUserId());
+        dto.setContactName(entity.getContactName());
+        dto.setContactPhone(entity.getContactPhone());
+        dto.setStreet(entity.getStreet());
+        dto.setCity(entity.getCity());
+        dto.setState(entity.getState());
+        dto.setZipCode(entity.getZipCode());
+        dto.setIsDefault(entity.getIsDefault());
+        dto.setLabel(entity.getLabel());
+        return dto;
+    }
+
+    /**
+     * 将UserAddressDTO转换为UserAddressEntity
+     */
+    private UserAddressEntity convertAddressToEntity(UserAddressDTO dto) {
+        UserAddressEntity entity = new UserAddressEntity();
+        entity.setId(dto.getId());
+        entity.setUserId(dto.getUserId());
+        entity.setContactName(dto.getContactName());
+        entity.setContactPhone(dto.getContactPhone());
+        entity.setStreet(dto.getStreet());
+        entity.setCity(dto.getCity());
+        entity.setState(dto.getState());
+        entity.setZipCode(dto.getZipCode());
+        entity.setIsDefault(dto.getIsDefault());
+        entity.setLabel(dto.getLabel());
+        return entity;
+    }
+
     private UserEntity convertToEntity(UserDTO dto) {
         UserEntity entity = new UserEntity();
         entity.setId(dto.getId());
