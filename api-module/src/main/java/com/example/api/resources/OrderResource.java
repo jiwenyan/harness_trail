@@ -1,5 +1,7 @@
 package com.example.api.resources;
 
+import com.example.api.dto.request.CreateOrderItemRequest;
+import com.example.api.dto.request.CreateOrderRequest;
 import com.example.api.dto.request.PaymentCallbackRequest;
 import com.example.api.dto.response.OrderItemResponse;
 import com.example.api.dto.response.OrderResponse;
@@ -19,6 +21,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -75,8 +79,8 @@ public class OrderResource {
      * 创建订单
      */
     @POST
-    public Response createOrder(@Valid OrderResponse orderDTO) {
-        OrderEntity order = convertToEntity(orderDTO);
+    public Response createOrder(@Valid CreateOrderRequest request) {
+        OrderEntity order = convertToEntity(request);
         OrderEntity createdOrder = orderService.createOrder(order);
         OrderResponse responseDTO = convertToDTO(createdOrder);
         return Response.status(Response.Status.CREATED)
@@ -137,6 +141,47 @@ public class OrderResource {
             @QueryParam("size") @DefaultValue("20") int size) {
         Pageable pageable = PageRequest.of(page, size);
         Page<OrderEntity> orderPage = orderService.getOrdersByUserId(userId, pageable);
+
+        List<OrderResponse> dtos = orderPage.getContent().stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+
+        return Response.ok(dtos)
+                .header("X-Total-Count", orderPage.getTotalElements())
+                .header("X-Total-Pages", orderPage.getTotalPages())
+                .build();
+    }
+
+    /**
+     * 根据筛选条件查询订单
+     */
+    @GET
+    @Path("/filters")
+    public Response getOrdersByFilters(
+            @QueryParam("userId") Long userId,
+            @QueryParam("status") String status,
+            @QueryParam("paymentStatus") String paymentStatus,
+            @QueryParam("startDate") String startDate,
+            @QueryParam("endDate") String endDate,
+            @QueryParam("keyword") String keyword,
+            @QueryParam("page") @DefaultValue("0") int page,
+            @QueryParam("size") @DefaultValue("20") int size) {
+        Pageable pageable = PageRequest.of(page, size);
+
+        OrderStatus orderStatus = status != null && !status.trim().isEmpty() ? OrderStatus.valueOf(status) : null;
+        PaymentStatus payStatus = paymentStatus != null && !paymentStatus.trim().isEmpty() ? PaymentStatus.valueOf(paymentStatus) : null;
+
+        LocalDateTime start = null;
+        LocalDateTime end = null;
+        DateTimeFormatter formatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
+        if (startDate != null && !startDate.trim().isEmpty()) {
+            start = LocalDateTime.parse(startDate, formatter);
+        }
+        if (endDate != null && !endDate.trim().isEmpty()) {
+            end = LocalDateTime.parse(endDate, formatter);
+        }
+
+        Page<OrderEntity> orderPage = orderService.getOrdersByFilters(userId, orderStatus, payStatus, start, end, keyword, pageable);
 
         List<OrderResponse> dtos = orderPage.getContent().stream()
                 .map(this::convertToDTO)
@@ -285,6 +330,40 @@ public class OrderResource {
             entity.setOrderItems(itemEntities);
         }
 
+        return entity;
+    }
+
+    /**
+     * 将CreateOrderRequest转换为OrderEntity
+     */
+    private OrderEntity convertToEntity(CreateOrderRequest request) {
+        OrderEntity entity = new OrderEntity();
+        entity.setUserId(request.getUserId());
+        entity.setDeliveryAddress(request.getDeliveryAddress());
+        entity.setDeliveryInstructions(request.getDeliveryInstructions());
+
+        // 转换订单项
+        if (request.getOrderItems() != null) {
+            List<OrderItemEntity> itemEntities = request.getOrderItems().stream()
+                    .map(this::convertItemToEntity)
+                    .collect(Collectors.toList());
+            entity.setOrderItems(itemEntities);
+        }
+
+        return entity;
+    }
+
+    /**
+     * 将CreateOrderItemRequest转换为OrderItemEntity
+     */
+    private OrderItemEntity convertItemToEntity(CreateOrderItemRequest request) {
+        OrderItemEntity entity = new OrderItemEntity();
+        entity.setId(null);
+        entity.setFoodItemId(request.getFoodItemId());
+        entity.setQuantity(request.getQuantity());
+        entity.setUnitPrice(request.getUnitPrice());
+        entity.setSpecialInstructions(request.getSpecialInstructions());
+        // totalPrice will be calculated in service
         return entity;
     }
 
