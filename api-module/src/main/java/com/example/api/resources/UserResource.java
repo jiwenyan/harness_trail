@@ -1,7 +1,9 @@
 package com.example.api.resources;
 
-import com.example.api.dto.UserAddressDTO;
-import com.example.api.dto.UserDTO;
+import com.example.api.dto.request.CreateAddressRequest;
+import com.example.api.dto.request.CreateUserRequest;
+import com.example.api.dto.response.UserAddressResponse;
+import com.example.api.dto.response.UserResponse;
 import com.example.data.entity.UserAddressEntity;
 import com.example.data.entity.UserEntity;
 import com.example.service.interfaces.UserAddressService;
@@ -46,7 +48,7 @@ public class UserResource {
     public Response getUserById(@PathParam("id") Long id) {
         Optional<UserEntity> user = userService.getUserById(id);
         if (user.isPresent()) {
-            UserDTO dto = convertToDTO(user.get());
+            UserResponse dto = convertToDTO(user.get());
             return Response.ok(dto).build();
         }
         return Response.status(Response.Status.NOT_FOUND)
@@ -62,7 +64,7 @@ public class UserResource {
     public Response getUserByUsername(@PathParam("username") String username) {
         Optional<UserEntity> user = userService.getUserByUsername(username);
         if (user.isPresent()) {
-            UserDTO dto = convertToDTO(user.get());
+            UserResponse dto = convertToDTO(user.get());
             return Response.ok(dto).build();
         }
         return Response.status(Response.Status.NOT_FOUND)
@@ -78,7 +80,7 @@ public class UserResource {
     public Response getUserByEmail(@PathParam("email") String email) {
         Optional<UserEntity> user = userService.getUserByEmail(email);
         if (user.isPresent()) {
-            UserDTO dto = convertToDTO(user.get());
+            UserResponse dto = convertToDTO(user.get());
             return Response.ok(dto).build();
         }
         return Response.status(Response.Status.NOT_FOUND)
@@ -90,19 +92,13 @@ public class UserResource {
      * 创建用户
      */
     @POST
-    public Response createUser(@Valid UserDTO userDTO) {
-        try {
-            UserEntity user = convertToEntity(userDTO);
-            UserEntity createdUser = userService.createUser(user);
-            UserDTO responseDTO = convertToDTO(createdUser);
-            return Response.status(Response.Status.CREATED)
-                    .entity(responseDTO)
-                    .build();
-        } catch (IllegalArgumentException e) {
-            return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(e.getMessage())
-                    .build();
-        }
+    public Response createUser(@Valid CreateUserRequest request) {
+        UserEntity user = convertToEntity(request);
+        UserEntity createdUser = userService.createUser(user);
+        UserResponse responseDTO = convertToDTO(createdUser);
+        return Response.status(Response.Status.CREATED)
+                .entity(responseDTO)
+                .build();
     }
 
     /**
@@ -110,17 +106,12 @@ public class UserResource {
      */
     @PUT
     @Path("/{id}")
-    public Response updateUser(@PathParam("id") Long id, @Valid UserDTO userDTO) {
-        try {
-            UserEntity user = convertToEntity(userDTO);
-            UserEntity updatedUser = userService.updateUser(id, user);
-            UserDTO responseDTO = convertToDTO(updatedUser);
-            return Response.ok(responseDTO).build();
-        } catch (IllegalArgumentException e) {
-            return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(e.getMessage())
-                    .build();
-        }
+    public Response updateUser(@PathParam("id") Long id, @Valid CreateUserRequest request) {
+        UserEntity user = convertToEntity(request);
+        user.setId(id);
+        UserEntity updatedUser = userService.updateUser(id, user);
+        UserResponse responseDTO = convertToDTO(updatedUser);
+        return Response.ok(responseDTO).build();
     }
 
     /**
@@ -129,14 +120,8 @@ public class UserResource {
     @DELETE
     @Path("/{id}")
     public Response deleteUser(@PathParam("id") Long id) {
-        try {
-            userService.deleteUser(id);
-            return Response.noContent().build();
-        } catch (IllegalArgumentException e) {
-            return Response.status(Response.Status.NOT_FOUND)
-                    .entity(e.getMessage())
-                    .build();
-        }
+        userService.deleteUser(id);
+        return Response.noContent().build();
     }
 
     /**
@@ -149,7 +134,7 @@ public class UserResource {
         Pageable pageable = PageRequest.of(page, size);
         Page<UserEntity> userPage = userService.getAllUsers(pageable);
 
-        List<UserDTO> dtos = userPage.getContent().stream()
+        List<UserResponse> dtos = userPage.getContent().stream()
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
 
@@ -166,7 +151,7 @@ public class UserResource {
     @Path("/search")
     public Response searchUsers(@QueryParam("keyword") String keyword) {
         List<UserEntity> users = userService.searchUsers(keyword);
-        List<UserDTO> dtos = users.stream()
+        List<UserResponse> dtos = users.stream()
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
         return Response.ok(dtos).build();
@@ -223,7 +208,7 @@ public class UserResource {
     @Path("/{userId}/addresses")
     public Response getUserAddresses(@PathParam("userId") Long userId) {
         List<UserAddressEntity> addresses = userAddressService.getAddressesByUserId(userId);
-        List<UserAddressDTO> dtos = addresses.stream()
+        List<UserAddressResponse> dtos = addresses.stream()
                 .map(this::convertAddressToDTO)
                 .collect(Collectors.toList());
         return Response.ok(dtos).build();
@@ -249,19 +234,14 @@ public class UserResource {
      */
     @POST
     @Path("/{userId}/addresses")
-    public Response createAddress(@PathParam("userId") Long userId, @Valid UserAddressDTO dto) {
-        try {
-            dto.setUserId(userId);
-            UserAddressEntity entity = convertAddressToEntity(dto);
-            UserAddressEntity created = userAddressService.createAddress(entity);
-            return Response.status(Response.Status.CREATED)
-                    .entity(convertAddressToDTO(created))
-                    .build();
-        } catch (IllegalArgumentException e) {
-            return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(e.getMessage())
-                    .build();
-        }
+    public Response createAddress(@PathParam("userId") Long userId, @Valid CreateAddressRequest request) {
+        request.setIsDefault(request.getIsDefault() != null && request.getIsDefault());
+        UserAddressEntity entity = convertAddressToEntity(request);
+        entity.setUserId(userId);
+        UserAddressEntity created = userAddressService.createAddress(entity);
+        return Response.status(Response.Status.CREATED)
+                .entity(convertAddressToDTO(created))
+                .build();
     }
 
     /**
@@ -272,17 +252,12 @@ public class UserResource {
     public Response updateAddress(
             @PathParam("userId") Long userId,
             @PathParam("addressId") Long addressId,
-            @Valid UserAddressDTO dto) {
-        try {
-            dto.setUserId(userId);
-            UserAddressEntity entity = convertAddressToEntity(dto);
-            UserAddressEntity updated = userAddressService.updateAddress(addressId, entity);
-            return Response.ok(convertAddressToDTO(updated)).build();
-        } catch (IllegalArgumentException e) {
-            return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(e.getMessage())
-                    .build();
-        }
+            @Valid CreateAddressRequest request) {
+        UserAddressEntity entity = convertAddressToEntity(request);
+        entity.setUserId(userId);
+        entity.setId(addressId);
+        UserAddressEntity updated = userAddressService.updateAddress(addressId, entity);
+        return Response.ok(convertAddressToDTO(updated)).build();
     }
 
     /**
@@ -293,14 +268,8 @@ public class UserResource {
     public Response deleteAddress(
             @PathParam("userId") Long userId,
             @PathParam("addressId") Long addressId) {
-        try {
-            userAddressService.deleteAddress(addressId);
-            return Response.noContent().build();
-        } catch (IllegalArgumentException e) {
-            return Response.status(Response.Status.NOT_FOUND)
-                    .entity(e.getMessage())
-                    .build();
-        }
+        userAddressService.deleteAddress(addressId);
+        return Response.noContent().build();
     }
 
     /**
@@ -311,21 +280,15 @@ public class UserResource {
     public Response setDefaultAddress(
             @PathParam("userId") Long userId,
             @PathParam("addressId") Long addressId) {
-        try {
-            UserAddressEntity updated = userAddressService.setDefaultAddress(userId, addressId);
-            return Response.ok(convertAddressToDTO(updated)).build();
-        } catch (IllegalArgumentException e) {
-            return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(e.getMessage())
-                    .build();
-        }
+        UserAddressEntity updated = userAddressService.setDefaultAddress(userId, addressId);
+        return Response.ok(convertAddressToDTO(updated)).build();
     }
 
     /**
-     * 将UserEntity转换为UserDTO
+     * 将UserEntity转换为UserResponse
      */
-    private UserDTO convertToDTO(UserEntity entity) {
-        UserDTO dto = new UserDTO();
+    private UserResponse convertToDTO(UserEntity entity) {
+        UserResponse dto = new UserResponse();
         dto.setId(entity.getId());
         dto.setUsername(entity.getUsername());
         // 注意：不返回密码字段
@@ -339,13 +302,10 @@ public class UserResource {
     }
 
     /**
-     * 将UserDTO转换为UserEntity
+     * 将UserAddressEntity转换为UserAddressResponse
      */
-    /**
-     * 将UserAddressEntity转换为UserAddressDTO
-     */
-    private UserAddressDTO convertAddressToDTO(UserAddressEntity entity) {
-        UserAddressDTO dto = new UserAddressDTO();
+    private UserAddressResponse convertAddressToDTO(UserAddressEntity entity) {
+        UserAddressResponse dto = new UserAddressResponse();
         dto.setId(entity.getId());
         dto.setUserId(entity.getUserId());
         dto.setContactName(entity.getContactName());
@@ -360,32 +320,32 @@ public class UserResource {
     }
 
     /**
-     * 将UserAddressDTO转换为UserAddressEntity
+     * 将CreateAddressRequest转换为UserAddressEntity
      */
-    private UserAddressEntity convertAddressToEntity(UserAddressDTO dto) {
+    private UserAddressEntity convertAddressToEntity(CreateAddressRequest request) {
         UserAddressEntity entity = new UserAddressEntity();
-        entity.setId(dto.getId());
-        entity.setUserId(dto.getUserId());
-        entity.setContactName(dto.getContactName());
-        entity.setContactPhone(dto.getContactPhone());
-        entity.setStreet(dto.getStreet());
-        entity.setCity(dto.getCity());
-        entity.setState(dto.getState());
-        entity.setZipCode(dto.getZipCode());
-        entity.setIsDefault(dto.getIsDefault());
-        entity.setLabel(dto.getLabel());
+        entity.setContactName(request.getContactName());
+        entity.setContactPhone(request.getContactPhone());
+        entity.setStreet(request.getStreet());
+        entity.setCity(request.getCity());
+        entity.setState(request.getState());
+        entity.setZipCode(request.getZipCode());
+        entity.setIsDefault(request.getIsDefault());
+        entity.setLabel(request.getLabel());
         return entity;
     }
 
-    private UserEntity convertToEntity(UserDTO dto) {
+    /**
+     * 将CreateUserRequest转换为UserEntity
+     */
+    private UserEntity convertToEntity(CreateUserRequest request) {
         UserEntity entity = new UserEntity();
-        entity.setId(dto.getId());
-        entity.setUsername(dto.getUsername());
-        entity.setPassword(dto.getPassword());
-        entity.setEmail(dto.getEmail());
-        entity.setPhone(dto.getPhone());
-        entity.setFullName(dto.getFullName());
-        entity.setDefaultAddress(dto.getDefaultAddress());
+        entity.setUsername(request.getUsername());
+        entity.setPassword(request.getPassword());
+        entity.setEmail(request.getEmail());
+        entity.setPhone(request.getPhone());
+        entity.setFullName(request.getFullName());
+        entity.setDefaultAddress(request.getDefaultAddress());
         return entity;
     }
 }

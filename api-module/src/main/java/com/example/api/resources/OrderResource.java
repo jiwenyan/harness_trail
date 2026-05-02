@@ -1,7 +1,8 @@
 package com.example.api.resources;
 
-import com.example.api.dto.OrderDTO;
-import com.example.api.dto.OrderItemDTO;
+import com.example.api.dto.request.PaymentCallbackRequest;
+import com.example.api.dto.response.OrderItemResponse;
+import com.example.api.dto.response.OrderResponse;
 import com.example.data.entity.OrderEntity;
 import com.example.data.entity.OrderItemEntity;
 import com.example.data.enums.OrderStatus;
@@ -46,7 +47,7 @@ public class OrderResource {
     public Response getOrderById(@PathParam("id") Long id) {
         Optional<OrderEntity> order = orderService.getOrderById(id);
         if (order.isPresent()) {
-            OrderDTO dto = convertToDTO(order.get());
+            OrderResponse dto = convertToDTO(order.get());
             return Response.ok(dto).build();
         }
         return Response.status(Response.Status.NOT_FOUND)
@@ -62,7 +63,7 @@ public class OrderResource {
     public Response getOrderByOrderNumber(@PathParam("orderNumber") String orderNumber) {
         Optional<OrderEntity> order = orderService.getOrderByOrderNumber(orderNumber);
         if (order.isPresent()) {
-            OrderDTO dto = convertToDTO(order.get());
+            OrderResponse dto = convertToDTO(order.get());
             return Response.ok(dto).build();
         }
         return Response.status(Response.Status.NOT_FOUND)
@@ -74,19 +75,13 @@ public class OrderResource {
      * 创建订单
      */
     @POST
-    public Response createOrder(@Valid OrderDTO orderDTO) {
-        try {
-            OrderEntity order = convertToEntity(orderDTO);
-            OrderEntity createdOrder = orderService.createOrder(order);
-            OrderDTO responseDTO = convertToDTO(createdOrder);
-            return Response.status(Response.Status.CREATED)
-                    .entity(responseDTO)
-                    .build();
-        } catch (IllegalArgumentException e) {
-            return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(e.getMessage())
-                    .build();
-        }
+    public Response createOrder(@Valid OrderResponse orderDTO) {
+        OrderEntity order = convertToEntity(orderDTO);
+        OrderEntity createdOrder = orderService.createOrder(order);
+        OrderResponse responseDTO = convertToDTO(createdOrder);
+        return Response.status(Response.Status.CREATED)
+                .entity(responseDTO)
+                .build();
     }
 
     /**
@@ -94,17 +89,11 @@ public class OrderResource {
      */
     @PUT
     @Path("/{id}")
-    public Response updateOrder(@PathParam("id") Long id, @Valid OrderDTO orderDTO) {
-        try {
-            OrderEntity order = convertToEntity(orderDTO);
-            OrderEntity updatedOrder = orderService.updateOrder(id, order);
-            OrderDTO responseDTO = convertToDTO(updatedOrder);
-            return Response.ok(responseDTO).build();
-        } catch (IllegalArgumentException e) {
-            return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(e.getMessage())
-                    .build();
-        }
+    public Response updateOrder(@PathParam("id") Long id, @Valid OrderResponse orderDTO) {
+        OrderEntity order = convertToEntity(orderDTO);
+        OrderEntity updatedOrder = orderService.updateOrder(id, order);
+        OrderResponse responseDTO = convertToDTO(updatedOrder);
+        return Response.ok(responseDTO).build();
     }
 
     /**
@@ -113,14 +102,8 @@ public class OrderResource {
     @DELETE
     @Path("/{id}")
     public Response deleteOrder(@PathParam("id") Long id) {
-        try {
-            orderService.deleteOrder(id);
-            return Response.noContent().build();
-        } catch (IllegalArgumentException e) {
-            return Response.status(Response.Status.NOT_FOUND)
-                    .entity(e.getMessage())
-                    .build();
-        }
+        orderService.deleteOrder(id);
+        return Response.noContent().build();
     }
 
     /**
@@ -133,7 +116,7 @@ public class OrderResource {
         Pageable pageable = PageRequest.of(page, size);
         Page<OrderEntity> orderPage = orderService.getAllOrders(pageable);
 
-        List<OrderDTO> dtos = orderPage.getContent().stream()
+        List<OrderResponse> dtos = orderPage.getContent().stream()
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
 
@@ -155,7 +138,7 @@ public class OrderResource {
         Pageable pageable = PageRequest.of(page, size);
         Page<OrderEntity> orderPage = orderService.getOrdersByUserId(userId, pageable);
 
-        List<OrderDTO> dtos = orderPage.getContent().stream()
+        List<OrderResponse> dtos = orderPage.getContent().stream()
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
 
@@ -173,15 +156,9 @@ public class OrderResource {
     public Response updateOrderStatus(
             @PathParam("id") Long id,
             @QueryParam("status") OrderStatus status) {
-        try {
-            OrderEntity updatedOrder = orderService.updateOrderStatus(id, status);
-            OrderDTO responseDTO = convertToDTO(updatedOrder);
-            return Response.ok(responseDTO).build();
-        } catch (IllegalArgumentException e) {
-            return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(e.getMessage())
-                    .build();
-        }
+        OrderEntity updatedOrder = orderService.updateOrderStatus(id, status);
+        OrderResponse responseDTO = convertToDTO(updatedOrder);
+        return Response.ok(responseDTO).build();
     }
 
     /**
@@ -192,15 +169,27 @@ public class OrderResource {
     public Response updatePaymentStatus(
             @PathParam("id") Long id,
             @QueryParam("paymentStatus") PaymentStatus paymentStatus) {
-        try {
-            OrderEntity updatedOrder = orderService.updatePaymentStatus(id, paymentStatus);
-            OrderDTO responseDTO = convertToDTO(updatedOrder);
-            return Response.ok(responseDTO).build();
-        } catch (IllegalArgumentException e) {
-            return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(e.getMessage())
-                    .build();
-        }
+        OrderEntity updatedOrder = orderService.updatePaymentStatus(id, paymentStatus);
+        OrderResponse responseDTO = convertToDTO(updatedOrder);
+        return Response.ok(responseDTO).build();
+    }
+
+    /**
+     * 支付回调
+     */
+    @PUT
+    @Path("/{id}/payment/callback")
+    public Response paymentCallback(
+            @PathParam("id") Long id,
+            @Valid PaymentCallbackRequest callbackRequest) {
+        PaymentStatus paymentStatus = PaymentStatus.valueOf(callbackRequest.getPaymentStatus());
+        OrderEntity order = orderService.getOrderById(id)
+                .orElseThrow(() -> new IllegalArgumentException("订单不存在"));
+        order.setPaymentTransactionId(callbackRequest.getTransactionId());
+        order.setPaymentMethod(callbackRequest.getPaymentMethod());
+        OrderEntity updatedOrder = orderService.updatePaymentStatus(id, paymentStatus);
+        OrderResponse responseDTO = convertToDTO(updatedOrder);
+        return Response.ok(responseDTO).build();
     }
 
     /**
@@ -209,15 +198,9 @@ public class OrderResource {
     @PUT
     @Path("/{id}/cancel")
     public Response cancelOrder(@PathParam("id") Long id) {
-        try {
-            OrderEntity cancelledOrder = orderService.cancelOrder(id);
-            OrderDTO responseDTO = convertToDTO(cancelledOrder);
-            return Response.ok(responseDTO).build();
-        } catch (IllegalArgumentException e) {
-            return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(e.getMessage())
-                    .build();
-        }
+        OrderEntity cancelledOrder = orderService.cancelOrder(id);
+        OrderResponse responseDTO = convertToDTO(cancelledOrder);
+        return Response.ok(responseDTO).build();
     }
 
     /**
@@ -226,21 +209,15 @@ public class OrderResource {
     @GET
     @Path("/{id}/total-amount")
     public Response calculateTotalAmount(@PathParam("id") Long id) {
-        try {
-            BigDecimal totalAmount = orderService.calculateTotalAmount(id);
-            return Response.ok(totalAmount).build();
-        } catch (IllegalArgumentException e) {
-            return Response.status(Response.Status.NOT_FOUND)
-                    .entity(e.getMessage())
-                    .build();
-        }
+        BigDecimal totalAmount = orderService.calculateTotalAmount(id);
+        return Response.ok(totalAmount).build();
     }
 
     /**
-     * 将OrderEntity转换为OrderDTO
+     * 将OrderEntity转换为OrderResponse
      */
-    private OrderDTO convertToDTO(OrderEntity entity) {
-        OrderDTO dto = new OrderDTO();
+    private OrderResponse convertToDTO(OrderEntity entity) {
+        OrderResponse dto = new OrderResponse();
         dto.setId(entity.getId());
         dto.setOrderNumber(entity.getOrderNumber());
         dto.setUserId(entity.getUserId());
@@ -258,7 +235,7 @@ public class OrderResource {
 
         // 转换订单项
         if (entity.getOrderItems() != null) {
-            List<OrderItemDTO> itemDTOs = entity.getOrderItems().stream()
+            List<OrderItemResponse> itemDTOs = entity.getOrderItems().stream()
                     .map(this::convertItemToDTO)
                     .collect(Collectors.toList());
             dto.setOrderItems(itemDTOs);
@@ -268,10 +245,10 @@ public class OrderResource {
     }
 
     /**
-     * 将OrderItemEntity转换为OrderItemDTO
+     * 将OrderItemEntity转换为OrderItemResponse
      */
-    private OrderItemDTO convertItemToDTO(OrderItemEntity entity) {
-        OrderItemDTO dto = new OrderItemDTO();
+    private OrderItemResponse convertItemToDTO(OrderItemEntity entity) {
+        OrderItemResponse dto = new OrderItemResponse();
         dto.setId(entity.getId());
         dto.setOrderId(entity.getOrderId());
         dto.setFoodItemId(entity.getFoodItemId());
@@ -283,9 +260,9 @@ public class OrderResource {
     }
 
     /**
-     * 将OrderDTO转换为OrderEntity
+     * 将OrderResponse转换为OrderEntity
      */
-    private OrderEntity convertToEntity(OrderDTO dto) {
+    private OrderEntity convertToEntity(OrderResponse dto) {
         OrderEntity entity = new OrderEntity();
         entity.setId(dto.getId());
         entity.setOrderNumber(dto.getOrderNumber());
@@ -312,9 +289,9 @@ public class OrderResource {
     }
 
     /**
-     * 将OrderItemDTO转换为OrderItemEntity
+     * 将OrderItemResponse转换为OrderItemEntity
      */
-    private OrderItemEntity convertItemToEntity(OrderItemDTO dto, OrderEntity order) {
+    private OrderItemEntity convertItemToEntity(OrderItemResponse dto, OrderEntity order) {
         OrderItemEntity entity = new OrderItemEntity();
         entity.setId(dto.getId());
         entity.setOrderId(order.getId());

@@ -6,7 +6,6 @@ import subprocess
 import sys
 import argparse
 from pathlib import Path
-from typing import List, Tuple
 
 class Validator:
     def __init__(self, project_root: Path):
@@ -28,13 +27,15 @@ class Validator:
             shell=True,
             env=env,
             encoding='utf-8',
-            errors='replace'
+            errors='backslashreplace'
         )
 
         if result.returncode != 0:
             print("[ERROR] Maven 编译失败")
-            print(result.stdout[-500:])  # 只显示最后500行
-            print(result.stderr[-500:])
+            safe_out = result.stdout[-500:].encode('utf-8', errors='backslashreplace').decode('utf-8')
+            safe_err = result.stderr[-500:].encode('utf-8', errors='backslashreplace').decode('utf-8')
+            sys.stdout.buffer.write(safe_out.encode('utf-8'))
+            sys.stdout.buffer.write(safe_err.encode('utf-8'))
             return False
 
         print("[OK] Maven 编译成功")
@@ -45,7 +46,7 @@ class Validator:
         script_path = self.project_root / "scripts" / script_name
 
         if not script_path.exists():
-            print(f"⚠️  {script_name} 不存在，跳过")
+            print(f"  {script_name} 不存在，跳过")
             return True
 
         print(f"\n[SCRIPT] 运行 {script_name}...")
@@ -55,12 +56,12 @@ class Validator:
             capture_output=True,
             text=True,
             encoding='utf-8',
-            errors='replace'
+            errors='backslashreplace'
         )
 
         if result.stdout:
-            sys.stdout.reconfigure(encoding='utf-8', errors='replace')
-            print(result.stdout)
+            safe_out = result.stdout.encode('utf-8', errors='backslashreplace').decode('utf-8')
+            sys.stdout.buffer.write(safe_out.encode('utf-8'))
 
         if result.returncode != 0:
             self.errors += 1

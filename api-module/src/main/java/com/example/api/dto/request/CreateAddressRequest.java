@@ -1,4 +1,4 @@
-package com.example.api.dto;
+package com.example.api.dto.request;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -6,15 +6,11 @@ import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
 
 /**
- * 用户地址数据传输对象
+ * 创建地址请求DTO
  */
 @NoArgsConstructor
 @AllArgsConstructor
-public class UserAddressDTO {
-
-    private Long id;
-
-    private Long userId;
+public class CreateAddressRequest {
 
     @NotBlank(message = "联系人姓名不能为空")
     @Size(max = 50, message = "联系人姓名不能超过50个字符")
@@ -46,22 +42,6 @@ public class UserAddressDTO {
     private String label;
 
     // Manual getters and setters for Lombok compatibility
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public Long getUserId() {
-        return userId;
-    }
-
-    public void setUserId(Long userId) {
-        this.userId = userId;
-    }
-
     public String getContactName() {
         return contactName;
     }

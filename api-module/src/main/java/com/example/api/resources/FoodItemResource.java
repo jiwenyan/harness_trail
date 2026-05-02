@@ -1,6 +1,7 @@
 package com.example.api.resources;
 
-import com.example.api.dto.FoodItemDTO;
+import com.example.api.dto.request.CreateFoodItemRequest;
+import com.example.api.dto.response.FoodItemResponse;
 import com.example.data.entity.FoodItemEntity;
 import com.example.service.interfaces.FoodItemService;
 import jakarta.validation.Valid;
@@ -41,7 +42,7 @@ public class FoodItemResource {
     public Response getFoodItemById(@PathParam("id") Long id) {
         Optional<FoodItemEntity> foodItem = foodItemService.getFoodItemById(id);
         if (foodItem.isPresent()) {
-            FoodItemDTO dto = convertToDTO(foodItem.get());
+            FoodItemResponse dto = convertToDTO(foodItem.get());
             return Response.ok(dto).build();
         }
         return Response.status(Response.Status.NOT_FOUND)
@@ -53,19 +54,13 @@ public class FoodItemResource {
      * 创建菜品
      */
     @POST
-    public Response createFoodItem(@Valid FoodItemDTO foodItemDTO) {
-        try {
-            FoodItemEntity foodItem = convertToEntity(foodItemDTO);
-            FoodItemEntity createdFoodItem = foodItemService.createFoodItem(foodItem);
-            FoodItemDTO responseDTO = convertToDTO(createdFoodItem);
-            return Response.status(Response.Status.CREATED)
-                    .entity(responseDTO)
-                    .build();
-        } catch (IllegalArgumentException e) {
-            return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(e.getMessage())
-                    .build();
-        }
+    public Response createFoodItem(@Valid CreateFoodItemRequest request) {
+        FoodItemEntity foodItem = convertToEntity(request);
+        FoodItemEntity createdFoodItem = foodItemService.createFoodItem(foodItem);
+        FoodItemResponse responseDTO = convertToDTO(createdFoodItem);
+        return Response.status(Response.Status.CREATED)
+                .entity(responseDTO)
+                .build();
     }
 
     /**
@@ -73,17 +68,11 @@ public class FoodItemResource {
      */
     @PUT
     @Path("/{id}")
-    public Response updateFoodItem(@PathParam("id") Long id, @Valid FoodItemDTO foodItemDTO) {
-        try {
-            FoodItemEntity foodItem = convertToEntity(foodItemDTO);
-            FoodItemEntity updatedFoodItem = foodItemService.updateFoodItem(id, foodItem);
-            FoodItemDTO responseDTO = convertToDTO(updatedFoodItem);
-            return Response.ok(responseDTO).build();
-        } catch (IllegalArgumentException e) {
-            return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(e.getMessage())
-                    .build();
-        }
+    public Response updateFoodItem(@PathParam("id") Long id, @Valid CreateFoodItemRequest request) {
+        FoodItemEntity foodItem = convertToEntity(request);
+        FoodItemEntity updatedFoodItem = foodItemService.updateFoodItem(id, foodItem);
+        FoodItemResponse responseDTO = convertToDTO(updatedFoodItem);
+        return Response.ok(responseDTO).build();
     }
 
     /**
@@ -92,14 +81,8 @@ public class FoodItemResource {
     @DELETE
     @Path("/{id}")
     public Response deleteFoodItem(@PathParam("id") Long id) {
-        try {
-            foodItemService.deleteFoodItem(id);
-            return Response.noContent().build();
-        } catch (IllegalArgumentException e) {
-            return Response.status(Response.Status.NOT_FOUND)
-                    .entity(e.getMessage())
-                    .build();
-        }
+        foodItemService.deleteFoodItem(id);
+        return Response.noContent().build();
     }
 
     /**
@@ -112,7 +95,7 @@ public class FoodItemResource {
         Pageable pageable = PageRequest.of(page, size);
         Page<FoodItemEntity> foodItemPage = foodItemService.getAllFoodItems(pageable);
 
-        List<FoodItemDTO> dtos = foodItemPage.getContent().stream()
+        List<FoodItemResponse> dtos = foodItemPage.getContent().stream()
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
 
@@ -134,7 +117,7 @@ public class FoodItemResource {
         Pageable pageable = PageRequest.of(page, size);
         Page<FoodItemEntity> foodItemPage = foodItemService.getFoodItemsByCategory(category, pageable);
 
-        List<FoodItemDTO> dtos = foodItemPage.getContent().stream()
+        List<FoodItemResponse> dtos = foodItemPage.getContent().stream()
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
 
@@ -151,7 +134,7 @@ public class FoodItemResource {
     @Path("/search")
     public Response searchFoodItems(@QueryParam("keyword") String keyword) {
         List<FoodItemEntity> foodItems = foodItemService.searchFoodItems(keyword);
-        List<FoodItemDTO> dtos = foodItems.stream()
+        List<FoodItemResponse> dtos = foodItems.stream()
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
         return Response.ok(dtos).build();
@@ -175,15 +158,9 @@ public class FoodItemResource {
     public Response updateStockQuantity(
             @PathParam("id") Long id,
             @QueryParam("quantity") Integer quantity) {
-        try {
-            FoodItemEntity updatedFoodItem = foodItemService.updateStockQuantity(id, quantity);
-            FoodItemDTO responseDTO = convertToDTO(updatedFoodItem);
-            return Response.ok(responseDTO).build();
-        } catch (IllegalArgumentException e) {
-            return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(e.getMessage())
-                    .build();
-        }
+        FoodItemEntity updatedFoodItem = foodItemService.updateStockQuantity(id, quantity);
+        FoodItemResponse responseDTO = convertToDTO(updatedFoodItem);
+        return Response.ok(responseDTO).build();
     }
 
     /**
@@ -194,15 +171,9 @@ public class FoodItemResource {
     public Response updateAvailability(
             @PathParam("id") Long id,
             @QueryParam("available") Boolean available) {
-        try {
-            FoodItemEntity updatedFoodItem = foodItemService.updateAvailability(id, available);
-            FoodItemDTO responseDTO = convertToDTO(updatedFoodItem);
-            return Response.ok(responseDTO).build();
-        } catch (IllegalArgumentException e) {
-            return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(e.getMessage())
-                    .build();
-        }
+        FoodItemEntity updatedFoodItem = foodItemService.updateAvailability(id, available);
+        FoodItemResponse responseDTO = convertToDTO(updatedFoodItem);
+        return Response.ok(responseDTO).build();
     }
 
     /**
@@ -213,21 +184,15 @@ public class FoodItemResource {
     public Response checkStockAvailability(
             @PathParam("id") Long id,
             @QueryParam("quantity") Integer quantity) {
-        try {
-            boolean isAvailable = foodItemService.checkStockAvailability(id, quantity);
-            return Response.ok(isAvailable).build();
-        } catch (IllegalArgumentException e) {
-            return Response.status(Response.Status.NOT_FOUND)
-                    .entity(e.getMessage())
-                    .build();
-        }
+        boolean isAvailable = foodItemService.checkStockAvailability(id, quantity);
+        return Response.ok(isAvailable).build();
     }
 
     /**
-     * 将FoodItemEntity转换为FoodItemDTO
+     * 将FoodItemEntity转换为FoodItemResponse
      */
-    private FoodItemDTO convertToDTO(FoodItemEntity entity) {
-        FoodItemDTO dto = new FoodItemDTO();
+    private FoodItemResponse convertToDTO(FoodItemEntity entity) {
+        FoodItemResponse dto = new FoodItemResponse();
         dto.setId(entity.getId());
         dto.setName(entity.getName());
         dto.setDescription(entity.getDescription());
@@ -242,18 +207,17 @@ public class FoodItemResource {
     }
 
     /**
-     * 将FoodItemDTO转换为FoodItemEntity
+     * 将CreateFoodItemRequest转换为FoodItemEntity
      */
-    private FoodItemEntity convertToEntity(FoodItemDTO dto) {
+    private FoodItemEntity convertToEntity(CreateFoodItemRequest request) {
         FoodItemEntity entity = new FoodItemEntity();
-        entity.setId(dto.getId());
-        entity.setName(dto.getName());
-        entity.setDescription(dto.getDescription());
-        entity.setCategory(dto.getCategory());
-        entity.setPrice(dto.getPrice());
-        entity.setImageUrl(dto.getImageUrl());
-        entity.setIsAvailable(dto.getIsAvailable());
-        entity.setStockQuantity(dto.getStockQuantity());
+        entity.setName(request.getName());
+        entity.setDescription(request.getDescription());
+        entity.setCategory(request.getCategory());
+        entity.setPrice(request.getPrice());
+        entity.setImageUrl(request.getImageUrl());
+        entity.setIsAvailable(request.getIsAvailable());
+        entity.setStockQuantity(request.getStockQuantity());
         return entity;
     }
 }

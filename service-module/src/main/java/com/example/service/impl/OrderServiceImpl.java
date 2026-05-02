@@ -162,7 +162,21 @@ public class OrderServiceImpl implements OrderService {
         OrderEntity order = orderDAO.findById(orderId)
                 .orElseThrow(() -> new IllegalArgumentException("订单不存在"));
 
+        validatePaymentStatusTransition(order.getPaymentStatus(), paymentStatus);
+
         order.setPaymentStatus(paymentStatus);
+
+        // 当支付状态变为已退款时，恢复库存并取消订单
+        if (paymentStatus == PaymentStatus.REFUNDED) {
+            List<OrderItemEntity> items = orderItemDAO.findByOrderId(orderId);
+            if (items != null) {
+                for (OrderItemEntity item : items) {
+                    foodItemService.increaseStock(item.getFoodItemId(), item.getQuantity());
+                }
+            }
+            order.setStatus(OrderStatus.CANCELLED);
+        }
+
         return orderDAO.update(order);
     }
 
@@ -176,6 +190,15 @@ public class OrderServiceImpl implements OrderService {
         }
 
         order.setStatus(OrderStatus.CANCELLED);
+
+        // 恢复库存
+        List<OrderItemEntity> items = orderItemDAO.findByOrderId(orderId);
+        if (items != null) {
+            for (OrderItemEntity item : items) {
+                foodItemService.increaseStock(item.getFoodItemId(), item.getQuantity());
+            }
+        }
+
         return orderDAO.update(order);
     }
 
@@ -242,7 +265,43 @@ public class OrderServiceImpl implements OrderService {
     }
 
     /**
-     * 验证状态流转是否合法
+     * 验证支付状态流转是否合法
+     */
+    private void validatePaymentStatusTransition(PaymentStatus current, PaymentStatus target) {
+        if (current == target) {
+            return;
+        }
+
+        switch (current) {
+            case PENDING:
+                if (target != PaymentStatus.PROCESSING && target != PaymentStatus.CANCELLED) {
+                    throw new IllegalStateException("待支付状态只能转为处理中或已取消");
+                }
+                break;
+            case PROCESSING:
+                if (target != PaymentStatus.SUCCESS && target != PaymentStatus.FAILED) {
+                    throw new IllegalStateException("处理中状态只能转为成功或失败");
+                }
+                break;
+            case SUCCESS:
+                if (target != PaymentStatus.REFUNDED) {
+                    throw new IllegalStateException("已支付状态只能转为已退款");
+                }
+                break;
+            case FAILED:
+                if (target != PaymentStatus.PROCESSING) {
+                    throw new IllegalStateException("失败状态只能重试转为处理中");
+                }
+                break;
+            case REFUNDED:
+                throw new IllegalStateException("已退款状态不能修改");
+            case CANCELLED:
+                throw new IllegalStateException("已取消状态不能修改");
+        }
+    }
+
+    /**
+     * 验证订单状态流转是否合法
      */
     private void validateStatusTransition(OrderStatus current, OrderStatus target) {
         if (current == target) {

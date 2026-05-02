@@ -1,4 +1,4 @@
-package com.example.api.dto;
+package com.example.api.dto.request;
 
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
@@ -7,16 +7,13 @@ import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 
 /**
- * 菜品数据传输对象
+ * 创建菜品请求DTO
  */
 @NoArgsConstructor
 @AllArgsConstructor
-public class FoodItemDTO {
-
-    private Long id;
+public class CreateFoodItemRequest {
 
     @NotBlank(message = "菜品名称不能为空")
     @Size(max = 100, message = "菜品名称不能超过100个字符")
@@ -35,18 +32,8 @@ public class FoodItemDTO {
     private String imageUrl;
     private Boolean isAvailable = true;
     private Integer stockQuantity = 0;
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
 
     // Manual getters and setters for Lombok compatibility
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
     public String getName() {
         return name;
     }
@@ -101,21 +88,5 @@ public class FoodItemDTO {
 
     public void setStockQuantity(Integer stockQuantity) {
         this.stockQuantity = stockQuantity;
-    }
-
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
-    }
-
-    public LocalDateTime getUpdatedAt() {
-        return updatedAt;
-    }
-
-    public void setUpdatedAt(LocalDateTime updatedAt) {
-        this.updatedAt = updatedAt;
     }
 }

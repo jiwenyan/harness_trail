@@ -1,4 +1,4 @@
-package com.example.api.dto;
+package com.example.api.dto.request;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -6,16 +6,12 @@ import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDateTime;
-
 /**
- * 用户数据传输对象
+ * 创建用户请求DTO
  */
 @NoArgsConstructor
 @AllArgsConstructor
-public class UserDTO {
-
-    private Long id;
+public class CreateUserRequest {
 
     @NotBlank(message = "用户名不能为空")
     @Size(min = 3, max = 50, message = "用户名长度必须在3-50个字符之间")
@@ -35,18 +31,8 @@ public class UserDTO {
 
     private String fullName;
     private String defaultAddress;
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
 
     // Manual getters and setters for Lombok compatibility
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
     public String getUsername() {
         return username;
     }
@@ -93,21 +79,5 @@ public class UserDTO {
 
     public void setDefaultAddress(String defaultAddress) {
         this.defaultAddress = defaultAddress;
-    }
-
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
-    }
-
-    public LocalDateTime getUpdatedAt() {
-        return updatedAt;
-    }
-
-    public void setUpdatedAt(LocalDateTime updatedAt) {
-        this.updatedAt = updatedAt;
     }
 }

@@ -1,4 +1,4 @@
-package com.example.api.dto;
+package com.example.api.dto.response;
 
 import com.example.data.enums.OrderStatus;
 import com.example.data.enums.PaymentStatus;
@@ -12,14 +12,13 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 /**
- * 订单数据传输对象
+ * 订单响应DTO
  */
 @NoArgsConstructor
 @AllArgsConstructor
-public class OrderDTO {
+public class OrderResponse {
 
     private Long id;
-
     private String orderNumber;
 
     @NotNull(message = "用户ID不能为空")
@@ -47,7 +46,7 @@ public class OrderDTO {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
-    private List<OrderItemDTO> orderItems;
+    private List<OrderItemResponse> orderItems;
 
     // Manual getters and setters for Lombok compatibility
     public Long getId() {
@@ -162,11 +161,11 @@ public class OrderDTO {
         this.updatedAt = updatedAt;
     }
 
-    public List<OrderItemDTO> getOrderItems() {
+    public List<OrderItemResponse> getOrderItems() {
         return orderItems;
     }
 
-    public void setOrderItems(List<OrderItemDTO> orderItems) {
+    public void setOrderItems(List<OrderItemResponse> orderItems) {
         this.orderItems = orderItems;
     }
 }
